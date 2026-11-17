@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "turntable-studio"
+version = "0.0.1"
+description = "Turn a prompt or picture into a 3D character and a scroll-driven 360-degree turntable page."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Kunal Pidiha" }]
+requires-python = ">=3.10"
+dependencies = [
+    "typer>=0.12",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+]
+
+[project.scripts]
+turntable = "turntable.cli:app"
+
+[tool.setuptools.packages.find]
+include = ["turntable*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

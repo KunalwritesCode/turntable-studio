@@ -1,0 +1,25 @@
+# Secrets: never commit real tokens
+.env
+
+# Pipeline output (regenerated from cache or source)
+runs/
+dist/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+build/
+
+# Node (renderer/player tooling)
+node_modules/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
