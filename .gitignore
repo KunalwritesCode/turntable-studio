@@ -5,6 +5,10 @@
 runs/
 dist/
 
+# Fixture frames written into player/ for local development
+player/frames/
+player/manifest.json
+
 # Python
 __pycache__/
 *.py[cod]
