@@ -17,6 +17,8 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=8",
+    "pytest-playwright>=0.5",
+    "pillow>=10.1",
     "ruff>=0.6",
 ]
 
@@ -35,3 +37,7 @@ select = ["E", "F", "I", "B", "UP"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+filterwarnings = [
+    # Comes from the pytest-base-url plugin (installed with pytest-playwright), not this project.
+    "ignore:Session-scoped fixtures defined as instance methods:pytest.PytestRemovedIn10Warning",
+]
