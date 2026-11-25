@@ -3,15 +3,23 @@
 import base64
 import contextlib
 import json
+import re
 import shutil
 import tempfile
 from pathlib import Path
 
 from playwright.sync_api import Browser, sync_playwright
+from playwright.sync_api import Error as PlaywrightError
 
 from turntable._localserver import serve_directory
 
 RENDERER_DIR = Path(__file__).resolve().parent.parent.parent / "renderer"
+FRAME_NAME = re.compile(r"\d{4}\.png$")
+
+
+def _angles(frame_count: int) -> list[float]:
+    """Evenly spaced angles (degrees) covering one full turn, without duplicating 0."""
+    return [i * 360 / frame_count for i in range(frame_count)]
 
 
 def render(
@@ -62,18 +70,28 @@ def _render_frames(
             page = browser.new_page()
             try:
                 page.goto(f"{base_url}index.html?width={width}&height={height}")
-                page.wait_for_function("window.__turntableStatus !== 'loading'", timeout=15_000)
+                status = "window.__turntableStatus"
+                condition = f"{status} === 'ready' || {status} === 'error'"
+                try:
+                    page.wait_for_function(condition, timeout=15_000)
+                except PlaywrightError:
+                    raise RuntimeError(
+                        f"renderer page for {model_path} never finished loading within 15s "
+                        "(it loads three.js from cdn.jsdelivr.net; check that it's reachable)"
+                    ) from None
                 if page.evaluate("window.__turntableStatus") == "error":
                     error = page.evaluate("window.__turntableError")
                     raise RuntimeError(f"failed to load {model_path}: {error}")
 
                 frames_dir = out_dir / "frames"
-                shutil.rmtree(frames_dir, ignore_errors=True)
-                frames_dir.mkdir(parents=True)
+                if frames_dir.is_dir():
+                    for stale in frames_dir.iterdir():
+                        if stale.is_file() and FRAME_NAME.fullmatch(stale.name):
+                            stale.unlink()
+                frames_dir.mkdir(parents=True, exist_ok=True)
 
                 frame_names = []
-                for i in range(frame_count):
-                    angle = i * 360 / frame_count
+                for i, angle in enumerate(_angles(frame_count)):
                     data_url = page.evaluate("deg => window.renderAtAngle(deg)", angle)
                     png_bytes = base64.b64decode(data_url.split(",", 1)[1])
                     name = f"frames/{i + 1:04d}.png"

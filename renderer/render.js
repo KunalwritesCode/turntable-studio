@@ -41,8 +41,12 @@ new GLTFLoader().load(
     gltf.scene.position.sub(center);
     turntable.add(gltf.scene);
 
-    const fovRadians = (camera.fov * Math.PI) / 180;
-    const distance = Math.max(sphere.radius / Math.sin(fovRadians / 2), 0.1);
+    // Fit the bounding sphere within whichever field of view is narrower, so
+    // portrait (width < height) renders don't clip the sides.
+    const verticalFov = (camera.fov * Math.PI) / 180;
+    const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * camera.aspect);
+    const limitingFov = Math.min(verticalFov, horizontalFov);
+    const distance = Math.max(sphere.radius / Math.sin(limitingFov / 2), 0.1);
     camera.position.set(0, 0, distance);
     camera.near = distance / 100;
     camera.far = distance * 100;

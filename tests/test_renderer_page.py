@@ -6,7 +6,9 @@ import shutil
 import urllib.request
 from pathlib import Path
 
+import pytest
 from PIL import Image
+from playwright.sync_api import Error as PlaywrightError
 
 from turntable._localserver import serve_directory
 
@@ -35,3 +37,17 @@ def test_renders_a_transparent_frame_of_the_model(tmp_path, page):
         assert image.size == (200, 150)
         alpha = image.getchannel("A")
         assert alpha.getextrema()[1] > 0, "the model should cover at least one opaque pixel"
+
+
+def test_an_unreachable_cdn_fails_the_wait_instead_of_passing_it_silently(tmp_path, page):
+    shutil.copy(FIXTURE, tmp_path / "model.glb")
+    shutil.copy(RENDERER_DIR / "index.html", tmp_path / "index.html")
+    shutil.copy(RENDERER_DIR / "render.js", tmp_path / "render.js")
+    page.route("https://cdn.jsdelivr.net/**", lambda route: route.abort())
+    with serve_directory(tmp_path) as base_url:
+        page.goto(f"{base_url}index.html?width=200&height=150")
+        with pytest.raises(PlaywrightError):
+            page.wait_for_function(
+                "window.__turntableStatus === 'ready' || window.__turntableStatus === 'error'",
+                timeout=1_000,
+            )
