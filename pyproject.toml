@@ -12,6 +12,7 @@ authors = [{ name = "Kunal Pidiha" }]
 requires-python = ">=3.10"
 dependencies = [
     "typer>=0.12",
+    "playwright>=1.40",
 ]
 
 [project.optional-dependencies]
