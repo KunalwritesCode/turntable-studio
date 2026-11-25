@@ -1,0 +1,5 @@
+Duck.glb - test fixture for the M2 renderer
+
+Source: https://github.com/KhronosGroup/glTF-Sample-Assets (Models/Duck/glTF-Binary/Duck.glb)
+Copyright 2006, Sony Computer Entertainment America
+Licensed under the SCEA Shared Source License, Version 1.0 - see duck.LICENSE.txt
