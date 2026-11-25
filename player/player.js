@@ -4,12 +4,21 @@
 const canvas = document.getElementById("turntable");
 const ctx = canvas.getContext("2d");
 
+let images = [];
+let loaded = [];
+let loadedCount = 0;
+let frameCount = 0;
+let lastDrawn = -1;
+let reducedMotion = false;
+
 /**
  * Fetch and parse manifest.json.
  * @returns {Promise<{frames: string[], width: number, height: number}>}
  */
 async function loadManifest() {
-  // TODO
+  const response = await fetch("manifest.json");
+  if (!response.ok) throw new Error(`manifest.json: HTTP ${response.status}`);
+  return response.json();
 }
 
 /**
@@ -20,7 +29,14 @@ async function loadManifest() {
  * @returns {number[]}
  */
 function loadOrder(count, step = 8) {
-  // TODO
+  const keyframes = [];
+  for (let i = 0; i < count; i += step) keyframes.push(i);
+  const isKeyframe = new Set(keyframes);
+  const rest = [];
+  for (let i = 0; i < count; i++) {
+    if (!isKeyframe.has(i)) rest.push(i);
+  }
+  return [...keyframes, ...rest];
 }
 
 /**
@@ -29,7 +45,9 @@ function loadOrder(count, step = 8) {
  * @returns {number}
  */
 function frameForScroll(count) {
-  // TODO
+  const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+  const progress = scrollable > 0 ? Math.min(1, Math.max(0, window.scrollY / scrollable)) : 0;
+  return Math.round(progress * (count - 1));
 }
 
 /**
@@ -39,14 +57,29 @@ function frameForScroll(count) {
  * @returns {number}
  */
 function nearestLoaded(wanted, loaded) {
-  // TODO
+  let best = -1;
+  let bestDistance = Infinity;
+  for (let i = 0; i < loaded.length; i++) {
+    if (!loaded[i]) continue;
+    const distance = Math.abs(i - wanted);
+    if (distance < bestDistance) {
+      best = i;
+      bestDistance = distance;
+    }
+  }
+  return best;
 }
 
 /**
  * Size the canvas for its CSS size x devicePixelRatio, then redraw.
  */
 function resizeCanvas() {
-  // TODO
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.round(canvas.clientWidth * dpr);
+  canvas.height = Math.round(canvas.clientHeight * dpr);
+  if (lastDrawn >= 0 && images[lastDrawn]) {
+    drawFrame(images[lastDrawn], lastDrawn);
+  }
 }
 
 /**
@@ -56,13 +89,73 @@ function resizeCanvas() {
  * @param {number} index
  */
 function drawFrame(image, index) {
-  // TODO
+  const scale = Math.min(canvas.width / image.naturalWidth, canvas.height / image.naturalHeight);
+  const w = image.naturalWidth * scale;
+  const h = image.naturalHeight * scale;
+  const x = (canvas.width - w) / 2;
+  const y = (canvas.height - h) / 2;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(image, x, y, w, h);
+  canvas.dataset.frame = String(index);
 }
 
+/**
+ * Wrap `fn` so calling it repeatedly only runs it once per animation frame.
+ */
+function rafThrottle(fn) {
+  let scheduled = false;
+  return () => {
+    if (scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(() => {
+      scheduled = false;
+      fn();
+    });
+  };
+}
+
+function redraw() {
+  if (frameCount === 0) return;
+  const wanted = reducedMotion ? 0 : frameForScroll(frameCount);
+  const index = nearestLoaded(wanted, loaded);
+  if (index === -1 || index === lastDrawn) return;
+  lastDrawn = index;
+  drawFrame(images[index], index);
+}
+
+const scheduleRedraw = rafThrottle(redraw);
+const scheduleResize = rafThrottle(resizeCanvas);
+
 async function main() {
-  // TODO: load the manifest, start loading frames in loadOrder(),
-  // keep canvas.dataset.loaded up to date, draw frame 0 when it arrives,
-  // and redraw on scroll and resize (at most once per animation frame).
+  reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  resizeCanvas();
+  window.addEventListener("resize", scheduleResize);
+
+  const manifest = await loadManifest();
+  frameCount = manifest.frames.length;
+  images = new Array(frameCount);
+  loaded = new Array(frameCount).fill(false);
+  canvas.dataset.loaded = "0";
+
+  if (!reducedMotion) {
+    window.addEventListener("scroll", scheduleRedraw, { passive: true });
+  }
+
+  for (const index of loadOrder(frameCount)) {
+    const img = new Image();
+    images[index] = img;
+    img.onload = () => {
+      loaded[index] = true;
+      loadedCount += 1;
+      canvas.dataset.loaded = String(loadedCount);
+      scheduleRedraw();
+    };
+    img.onerror = () => {
+      // A frame that fails to load must not break the player: it simply
+      // never becomes eligible in `loaded`, so nearestLoaded skips it.
+    };
+    img.src = manifest.frames[index];
+  }
 }
 
 main();

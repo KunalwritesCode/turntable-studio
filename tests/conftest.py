@@ -11,6 +11,12 @@ class QuietHandler(http.server.SimpleHTTPRequestHandler):
         pass
 
 
+class FixtureServer(http.server.ThreadingHTTPServer):
+    # The player requests every frame at once; the default backlog of 5
+    # resets connections under that burst before a thread can accept them.
+    request_queue_size = 128
+
+
 @pytest.fixture(scope="session")
 def site_dir(tmp_path_factory):
     """A throwaway site: the current player files plus synthetic frames."""
@@ -21,7 +27,7 @@ def site_dir(tmp_path_factory):
 def site_url(site_dir):
     """Serve site_dir over HTTP on a free local port."""
     handler = functools.partial(QuietHandler, directory=str(site_dir))
-    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
+    server = FixtureServer(("127.0.0.1", 0), handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     yield f"http://127.0.0.1:{server.server_address[1]}/"
