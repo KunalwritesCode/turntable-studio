@@ -7,8 +7,8 @@ Turn a text prompt or a picture into an original 3D character and a scroll-drive
 ## Progress
 
 - [x] M0: project setup
-- [ ] M1: scroll player
-- [ ] M2: 360° renderer
+- [x] M1: scroll player
+- [x] M2: 360° renderer
 - [ ] M3: AI stages (image → 3D)
 - [ ] M4: gallery, measurements, v0.1.0
 
@@ -89,4 +89,5 @@ Design notes and trade-offs: [docs/scope.md](docs/scope.md).
 - Image generation: FLUX.2 [klein] 4B by Black Forest Labs (Apache 2.0).
 - Hosting for both models: Hugging Face Spaces and ZeroGPU.
 - Scroll animation: [GSAP](https://gsap.com) ScrollTrigger.
+- Test model: [Duck](https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/Duck) by Sony Computer Entertainment America, SCEA Shared Source License 1.0.
 - Project licence: MIT.
