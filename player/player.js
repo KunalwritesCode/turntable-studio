@@ -99,9 +99,7 @@ function drawFrame(image, index) {
   canvas.dataset.frame = String(index);
 }
 
-/**
- * Wrap `fn` so calling it repeatedly only runs it once per animation frame.
- */
+// Collapses repeated calls into one per animation frame.
 function rafThrottle(fn) {
   let scheduled = false;
   return () => {
@@ -150,10 +148,7 @@ async function main() {
       canvas.dataset.loaded = String(loadedCount);
       scheduleRedraw();
     };
-    img.onerror = () => {
-      // A frame that fails to load must not break the player: it simply
-      // never becomes eligible in `loaded`, so nearestLoaded skips it.
-    };
+    img.onerror = () => {}; // never marked loaded, so nearestLoaded just skips it
     img.src = manifest.frames[index];
   }
 }

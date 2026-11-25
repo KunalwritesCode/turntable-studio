@@ -12,8 +12,7 @@ class QuietHandler(http.server.SimpleHTTPRequestHandler):
 
 
 class FixtureServer(http.server.ThreadingHTTPServer):
-    # The player requests every frame at once; the default backlog of 5
-    # resets connections under that burst before a thread can accept them.
+    # default backlog (5) resets connections when the player requests all 60 frames at once
     request_queue_size = 128
 
 
